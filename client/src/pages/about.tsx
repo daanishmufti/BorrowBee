@@ -1,5 +1,4 @@
 import { FaLinkedin, FaFacebook, FaInstagram, FaGithub, FaGlobe } from 'react-icons/fa';
-import profileImage from "@assets/image_1748720911064.png";
 
 export default function About() {
   return (
@@ -18,7 +17,7 @@ export default function About() {
         <div className="text-center mb-12">
           <div className="profile-image-container mb-6">
             <img 
-              src={profileImage} 
+              src="https://daanishmufti.site/dd.jpg" 
               alt="Daanish Ahmad Mufti" 
               className="rounded-full w-48 h-48 mx-auto object-cover shadow-lg border-4 border-amber-300"
             />
