@@ -37,10 +37,10 @@ def create_app():
     # Initialize the app with the extension
     db.init_app(app)
     
+    # Import models before initializing app context
+    import models
+    
     with app.app_context():
-        # Import models to ensure tables are created
-        import models
-        
         # Create all tables
         db.create_all()
         
