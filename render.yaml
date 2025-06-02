@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: borrowbee
+    env: python
+    buildCommand: "pip install -r pyproject.toml"
+    startCommand: "gunicorn --bind 0.0.0.0:$PORT main:app"
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: borrowbee-db
+          property: connectionString
+      - key: SESSION_SECRET
+        generateValue: true
+
+databases:
+  - name: borrowbee-db
+    databaseName: borrowbee
+    user: borrowbee_user
