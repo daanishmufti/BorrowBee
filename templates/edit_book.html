@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Book - BorrowBee{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-12 mb-4">
+            <h1>Edit Book</h1>
+            <p class="text-muted">Update book information</p>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-body">
+                    <form method="POST" enctype="multipart/form-data">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="title" class="form-label">Title *</label>
+                                <input type="text" class="form-control" id="title" name="title" 
+                                       value="{{ book.title }}" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="author" class="form-label">Author *</label>
+                                <input type="text" class="form-control" id="author" name="author" 
+                                       value="{{ book.author }}" required>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="isbn" class="form-label">ISBN</label>
+                                <input type="text" class="form-control" id="isbn" name="isbn" 
+                                       value="{{ book.isbn or '' }}" placeholder="978-0-123456-78-9">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="publisher" class="form-label">Publisher</label>
+                                <input type="text" class="form-control" id="publisher" name="publisher" 
+                                       value="{{ book.publisher or '' }}">
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label for="publication_year" class="form-label">Publication Year</label>
+                                <input type="number" class="form-control" id="publication_year" 
+                                       name="publication_year" value="{{ book.publication_year or '' }}" 
+                                       min="1000" max="{{ current_year }}">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="category" class="form-label">Category</label>
+                                <select class="form-select" id="category" name="category">
+                                    <option value="">Select category...</option>
+                                    <option value="Fiction" {% if book.category == 'Fiction' %}selected{% endif %}>Fiction</option>
+                                    <option value="Non-Fiction" {% if book.category == 'Non-Fiction' %}selected{% endif %}>Non-Fiction</option>
+                                    <option value="Science" {% if book.category == 'Science' %}selected{% endif %}>Science</option>
+                                    <option value="Technology" {% if book.category == 'Technology' %}selected{% endif %}>Technology</option>
+                                    <option value="History" {% if book.category == 'History' %}selected{% endif %}>History</option>
+                                    <option value="Education" {% if book.category == 'Education' %}selected{% endif %}>Education</option>
+                                    <option value="Biography" {% if book.category == 'Biography' %}selected{% endif %}>Biography</option>
+                                    <option value="Reference" {% if book.category == 'Reference' %}selected{% endif %}>Reference</option>
+                                    <option value="Children" {% if book.category == 'Children' %}selected{% endif %}>Children</option>
+                                    <option value="Other" {% if book.category == 'Other' %}selected{% endif %}>Other</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="total_copies" class="form-label">Total Copies</label>
+                                <input type="number" class="form-control" id="total_copies" 
+                                       name="total_copies" value="{{ book.total_copies }}" min="1">
+                                <div class="form-text">
+                                    Currently {{ book.available_copies }} available
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description</label>
+                            <textarea class="form-control" id="description" name="description" 
+                                      rows="4" placeholder="Brief description of the book...">{{ book.description or '' }}</textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="cover_image" class="form-label">Cover Image</label>
+                            {% if book.cover_image %}
+                                <div class="mb-2">
+                                    <img src="{{ url_for('static', filename='uploads/' + book.cover_image) }}" 
+                                         alt="Current cover" class="img-thumbnail" style="max-height: 150px;">
+                                    <p class="text-muted mt-1">Current cover image</p>
+                                </div>
+                            {% endif %}
+                            <input type="file" class="form-control" id="cover_image" name="cover_image" 
+                                   accept="image/*">
+                            <div class="form-text">
+                                Upload a new cover image to replace the current one (PNG, JPG, JPEG, GIF). Max size: 16MB.
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{{ url_for('main.book_detail', book_id=book.id) }}" class="btn btn-secondary">
+                                <i data-feather="x"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i data-feather="save"></i> Update Book
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        feather.replace();
+        
+        // Set current year as max for publication year
+        const currentYear = new Date().getFullYear();
+        document.getElementById('publication_year').max = currentYear;
+    });
+</script>
+{% endblock %}

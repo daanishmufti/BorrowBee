@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+
+{% block title %}Add Book - BorrowBee{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-12 mb-4">
+            <h1>Add New Book</h1>
+            <p class="text-muted">Add a new book to the library collection</p>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-body">
+                    <form method="POST" enctype="multipart/form-data">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="title" class="form-label">Title *</label>
+                                <input type="text" class="form-control" id="title" name="title" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="author" class="form-label">Author *</label>
+                                <input type="text" class="form-control" id="author" name="author" required>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="isbn" class="form-label">ISBN</label>
+                                <input type="text" class="form-control" id="isbn" name="isbn" 
+                                       placeholder="978-0-123456-78-9">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="publisher" class="form-label">Publisher</label>
+                                <input type="text" class="form-control" id="publisher" name="publisher">
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label for="publication_year" class="form-label">Publication Year</label>
+                                <input type="number" class="form-control" id="publication_year" 
+                                       name="publication_year" min="1000" max="{{ current_year }}">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="category" class="form-label">Category</label>
+                                <select class="form-select" id="category" name="category">
+                                    <option value="">Select category...</option>
+                                    <option value="Fiction">Fiction</option>
+                                    <option value="Non-Fiction">Non-Fiction</option>
+                                    <option value="Science">Science</option>
+                                    <option value="Technology">Technology</option>
+                                    <option value="History">History</option>
+                                    <option value="Education">Education</option>
+                                    <option value="Biography">Biography</option>
+                                    <option value="Reference">Reference</option>
+                                    <option value="Children">Children</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="total_copies" class="form-label">Total Copies</label>
+                                <input type="number" class="form-control" id="total_copies" 
+                                       name="total_copies" value="1" min="1">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description</label>
+                            <textarea class="form-control" id="description" name="description" 
+                                      rows="4" placeholder="Brief description of the book..."></textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="cover_image" class="form-label">Cover Image</label>
+                            <input type="file" class="form-control" id="cover_image" name="cover_image" 
+                                   accept="image/*">
+                            <div class="form-text">
+                                Upload a cover image for the book (PNG, JPG, JPEG, GIF). Max size: 16MB.
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{{ url_for('main.books') }}" class="btn btn-secondary">
+                                <i data-feather="x"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i data-feather="plus"></i> Add Book
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        feather.replace();
+        
+        // Set current year as max for publication year
+        const currentYear = new Date().getFullYear();
+        document.getElementById('publication_year').max = currentYear;
+        
+        // Preview cover image
+        const coverInput = document.getElementById('cover_image');
+        coverInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    // You could add image preview functionality here
+                    console.log('Image selected:', file.name);
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    });
+</script>
+{% endblock %}

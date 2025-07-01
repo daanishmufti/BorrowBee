@@ -1,0 +1,318 @@
+{% extends "base.html" %}
+
+{% block title %}{{ book.title }} - BorrowBee{% endblock %}
+
+{% block content %}
+<div class="book-detail-container">
+<div class="container">
+        <!-- Book Detail Section -->
+        <div class="book-detail-grid" style="background: rgba(255, 255, 255, 0.95); border-radius: 20px; padding: 2rem; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1); display: grid; grid-template-columns: 300px 1fr; gap: 2rem; align-items: start;">
+            <div class="book-detail-image">
+                <!-- Book Image -->
+                <div style="background: linear-gradient(135deg, #FFD700 0%, #FF8C00 50%, #FFA500 100%); border-radius: 15px; aspect-ratio: 3/4; display: flex; align-items: center; justify-content: center; overflow: hidden; margin-bottom: 1rem;">
+                    {% if book.cover_image %}
+                        <img src="{{ book.cover_image }}"
+                             alt="{{ book.title }}"
+                             style="width: 100%; height: 100%; object-fit: cover; border-radius: 15px;">
+                    {% else %}
+                        <span style="font-size: 4rem; color: white;">📚</span>
+                    {% endif %}
+                </div>
+
+
+
+                <!-- Availability Status -->
+                <div class="availability-status {% if availability_status.expired %}inactive{% else %}active{% endif %}"
+                     style="padding: 0.8rem; border-radius: 10px; text-align: center; font-weight: 600; margin-bottom: 1rem;">
+                    {{ availability_status.message }}
+                </div>
+
+                <!-- Borrow Section -->
+                {% if not session.user_id %}
+                    <div style="background: #fff3cd; padding: 1rem; border-radius: 10px; border: 1px solid #ffeaa7; text-align: center;">
+                        <p style="color: #856404; margin: 0;">
+                            Please log in to borrow books
+                        </p>
+                    </div>
+                {% else %}
+                    <div id="borrowSection">
+                        <div id="contactButton" style="text-align: center;">
+                            <button onclick="showOwnerInfo()"
+                                    class="contact-button"
+                                    style="background: linear-gradient(45deg, #f39c12, #e67e22); color: white; padding: 0.8rem 1.5rem; border-radius: 10px; border: 2px solid #d68910; font-size: 1rem; font-weight: bold; cursor: pointer; transition: all 0.3s ease; width: 100%;">
+                                📞 Contact Owner
+                            </button>
+                        </div>
+
+                        <div id="ownerInfo" style="display: none;">
+                            <div style="background: #f8f9fa; padding: 1rem; border-radius: 10px; margin-bottom: 1rem; border: 1px solid #dee2e6; font-size: 0.9rem;">
+                                <h4 style="margin-bottom: 0.8rem; color: #333; font-size: 1rem;">Owner Contact:</h4>
+                                <div style="display: grid; gap: 0.3rem;">
+                                    <p><strong>Name:</strong> {{ owner.first_name or owner.username }}</p>
+                                    <p><strong>Email:</strong> {{ owner.email }}</p>
+                                    {% if owner.bio %}
+                                        <p><strong>Phone:</strong> {{ owner.bio }}</p>
+                                    {% endif %}
+                                    {% if owner.location %}
+                                        <p><strong>Location:</strong> {{ owner.location }}</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+
+
+                            <div style="background: #e3f2fd; padding: 0.8rem; border-radius: 8px; margin-top: 0.8rem; font-size: 0.8rem; color: #1565c0;">
+                                <strong>Note:</strong> Confirms your interest and logs the request.
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="book-detail-content">
+                <!-- Book Information -->
+                <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+                    <div>
+                        <h1 style="font-size: 2.5rem; margin-bottom: 0.5rem; color: #333; font-weight: 700;">
+                            {{ book.title }}
+                        </h1>
+                        <p style="font-size: 1.3rem; color: #666; font-style: italic; margin-bottom: 1rem;">
+                            by {{ book.author }}
+                        </p>
+                    </div>
+
+                    <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                        <span style="background: linear-gradient(45deg, #f39c12, #e67e22); color: white; padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.9rem; font-weight: 600;">
+                            {{ book.category }}
+                        </span>
+                        {% if book.age_group %}
+                            <span style="background: linear-gradient(45deg, #fef5e7, #f6d55c); color: #d69e2e; padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.9rem; font-weight: 600;">
+                                Age: {{ book.age_group }}
+                            </span>
+                        {% endif %}
+                    </div>
+
+                    <!-- Rating Display Only -->
+                    <div class="rating-section" style="background: #f8f9fa; padding: 1rem; border-radius: 12px; border: 2px solid #e9ecef; margin-bottom: 1rem;">
+                        <h3 style="margin-bottom: 0.8rem; color: #333; font-size: 1.2rem;">Rating</h3>
+
+                        <!-- Average Rating Display -->
+                        <div style="display: flex; align-items: center; gap: 0.8rem; flex-wrap: wrap;">
+                            <div class="rating-bees" style="display: flex; gap: 0.1rem;">
+                                {% for i in range(1, 6) %}
+                                    <span style="font-size: 1.3rem; {% if i <= average_rating|round %}opacity: 1;{% else %}opacity: 0.3;{% endif %}">🐝</span>
+                                {% endfor %}
+                            </div>
+                            <span class="rating-text" style="font-size: 1rem; color: #333; font-weight: 600;">
+                                {% if average_rating > 0 %}{{ "%.1f"|format(average_rating) }}/5{% else %}No ratings yet{% endif %}
+                            </span>
+                            <span class="rating-count" style="color: #666; font-size: 0.9rem;">
+                                ({{ rating_count }} rating{% if rating_count != 1 %}s{% endif %})
+                            </span>
+                        </div>
+
+                        <p style="margin-top: 0.4rem; color: #666; font-size: 0.8rem; font-style: italic;">
+                            Ratings can be given from the main library page
+                        </p>
+                    </div>
+
+                    {% if book.description %}
+                        <div style="background: #f8f9fa; padding: 1rem; border-radius: 12px; border: 2px solid #e9ecef;">
+                            <h3 style="margin-bottom: 0.8rem; color: #333; font-size: 1.2rem;">Description</h3>
+                            <p style="line-height: 1.5; color: #555; font-size: 0.95rem;">
+                                {{ book.description|replace('\n', '<br>')|safe if book.description else 'No description available.' }}
+                            </p>
+                        </div>
+                    {% endif %}
+                </div>
+
+
+            </div>
+        </div>
+
+        <!-- Rating Section -->
+        {% if session.user_id and session.user_id != book.user_id %}
+            <div style="background: rgba(255, 255, 255, 0.95); border-radius: 20px; padding: 2rem; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1); margin-top: 2rem;">
+                <h3 style="color: #333; margin-bottom: 1rem;">🐝 Rate this Book</h3>
+                <div class="rating-input" style="display: flex; gap: 0.5rem; align-items: center;">
+                    {% for i in range(1, 6) %}
+                        <button class="rating-btn"
+                                type="button"
+                                data-rating="{{ i }}"
+                                onclick="event.preventDefault(); submitRating({{ book.id }}, {{ i }}); return false;"
+                                style="background: none; border: none; font-size: 2rem; cursor: pointer; transition: transform 0.2s; {% if i <= user_rating %}opacity: 1;{% else %}opacity: 0.3;{% endif %}"
+                                onmouseover="this.style.transform='scale(1.2)'"
+                                onmouseout="this.style.transform='scale(1)'">🐝</button>
+                    {% endfor %}
+                    <span style="margin-left: 1rem; color: #666;">
+                        {% if user_rating %}Your rating: {{ user_rating }} stars{% else %}Click to rate{% endif %}
+                    </span>
+                </div>
+            </div>
+        {% endif %}
+</div>
+</div>
+
+<!-- Borrow Request Modal -->
+<div id="borrowModal" class="modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000;">
+    <div class="modal-content" style="background: white; margin: 5% auto; padding: 2rem; border-radius: 20px; max-width: 500px; position: relative;">
+        <span class="close" onclick="closeBorrowModal()" style="position: absolute; top: 1rem; right: 1.5rem; font-size: 2rem; cursor: pointer; color: #999;">&times;</span>
+
+        <h2 style="color: #333; margin-bottom: 1.5rem;">📩 Request to Borrow "{{ book.title }}"</h2>
+
+        <form id="borrowRequestForm" onsubmit="submitBorrowRequest(event)">
+            <input type="hidden" name="book_id" value="{{ book.id }}">
+
+            <div style="margin-bottom: 1.5rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #333;">Your Message to {{ owner.first_name or owner.username }}:</label>
+                <textarea name="message"
+                          placeholder="Hi! I'd love to borrow your book. When would be a good time to arrange pickup?"
+                          style="width: 100%; height: 100px; padding: 1rem; border: 2px solid #e1e5e9; border-radius: 10px; resize: vertical;"></textarea>
+            </div>
+
+            <div style="text-align: center;">
+                <button type="submit"
+                        class="btn btn-primary"
+                        style="background: linear-gradient(45deg, #FFD700, #FF8C00); border: none; padding: 1rem 2rem; border-radius: 15px; font-weight: 600; color: #333;">
+                    📧 Send Request
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function showOwnerInfo() {
+    document.getElementById('contactButton').style.display = 'none';
+    document.getElementById('ownerInfo').style.display = 'block';
+}
+
+function sendBorrowAlert() {
+    const bookId = {{ book.id }};
+    const message = "I'm interested in borrowing your book '{{ book.title }}'. Please let me know when would be a good time to arrange pickup.";
+
+    const formData = new FormData();
+    formData.append('book_id', bookId);
+    formData.append('message', message);
+
+    fetch('/api/borrow-request', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('✅ Borrow request sent successfully! The book owner will be notified.');
+        } else {
+            alert('❌ ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('❌ Failed to send request. Please try again.');
+    });
+}
+
+let isSubmittingRating = false;
+
+function submitRating(bookId, rating) {
+    if (isSubmittingRating) {
+        console.log('Rating submission already in progress, ignoring...');
+        return;
+    }
+
+    isSubmittingRating = true;
+    console.log('Submitting rating:', bookId, rating);
+
+    fetch('/submit-rating', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `book_id=${bookId}&rating=${rating}`
+    })
+    .then(response => {
+        console.log('Response status:', response.status);
+        return response.json();
+    })
+    .then(data => {
+        console.log('Response data:', data);
+        if (data.success) {
+            console.log('Rating submitted successfully, updating UI...');
+
+            // Update the user's rating buttons immediately
+            const ratingButtons = document.querySelectorAll('.rating-btn');
+            ratingButtons.forEach((btn, index) => {
+                const btnRating = index + 1;
+                btn.style.opacity = btnRating <= rating ? '1' : '0.3';
+            });
+
+            // Update the "Your rating" text
+            const ratingTextSpan = document.querySelector('.rating-input span');
+            if (ratingTextSpan) {
+                ratingTextSpan.textContent = `Your rating: ${rating} stars`;
+            }
+
+            // Update the average rating display
+            if (data.new_average !== undefined && data.rating_count !== undefined) {
+                console.log('Updating average rating display with:', data.new_average, data.rating_count);
+
+                // Update bee icons
+                const avgBees = document.querySelector('.rating-bees');
+                if (avgBees) {
+                    const bees = avgBees.querySelectorAll('span');
+                    bees.forEach((bee, index) => {
+                        const beeRating = index + 1;
+                        bee.style.opacity = beeRating <= Math.round(data.new_average) ? '1' : '0.3';
+                    });
+                }
+
+                // Update rating text
+                const avgRatingText = document.querySelector('.rating-text');
+                if (avgRatingText) {
+                    if (data.new_average > 0) {
+                        avgRatingText.textContent = `${data.new_average.toFixed(1)}/5`;
+                    } else {
+                        avgRatingText.textContent = 'No ratings yet';
+                    }
+                }
+
+                // Update rating count
+                const ratingCountSpan = document.querySelector('.rating-count');
+                if (ratingCountSpan) {
+                    ratingCountSpan.textContent = `(${data.rating_count} rating${data.rating_count !== 1 ? 's' : ''})`;
+                }
+            }
+
+            // Show success message and reload page for now
+            const successMsg = document.createElement('div');
+            successMsg.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #28a745; color: white; padding: 1rem; border-radius: 10px; z-index: 9999;';
+            successMsg.textContent = '✅ Rating updated!';
+            document.body.appendChild(successMsg);
+            setTimeout(() => {
+                successMsg.remove();
+                location.reload(); // Temporary fix - reload page to show updated rating
+            }, 1000);
+        } else {
+            console.error('Rating submission failed:', data.message);
+            alert('Failed to submit rating: ' + (data.message || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error submitting rating: ' + error.message);
+    })
+    .finally(() => {
+        isSubmittingRating = false;
+    });
+}
+
+// Close modal when clicking outside
+window.onclick = function(event) {
+    const modal = document.getElementById('borrowModal');
+    if (event.target === modal) {
+        closeBorrowModal();
+    }
+}
+</script>
+{% endblock %}
