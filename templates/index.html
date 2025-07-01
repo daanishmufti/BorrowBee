@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BorrowBee Digital Library</title>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/original-style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <header class="homepage-header">
+        <nav class="container">
+<div class="logo">
+    <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSHWdM-EsGO8rjNbN41zb5yxP75X832SZfy_g&s" alt="BorrowBee Logo" class="logo-img">
+    <span>BorrowBee</span>
+</div>
+
+<style>
+    .logo {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .logo-img {
+        height: 30px; /* Slightly smaller to match text */
+    }
+</style>
+            <div class="nav-buttons-container">
+                {% if session.user_id %}
+                    <div class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" style="text-decoration: none; color: #D2691E; font-weight: 500;">
+                            👤 {{ session.username }}
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{{ url_for('main.index') }}">🏠 Home</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('main.dashboard') }}">📋 Dashboard</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('main.about') }}">👤 About</a></li>
+                            {% if session.is_admin %}
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="{{ url_for('main.admin') }}">⚙️ Admin Panel</a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('main.add_book') }}">➕ Add New Book</a></li>
+                            {% endif %}
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}">🚪 Logout</a></li>
+                        </ul>
+                    </div>
+                {% else %}
+                    <div class="nav-auth-buttons">
+                        <a href="{{ url_for('auth.login') }}" class="btn btn-secondary">🔑 Login</a>
+                        <a href="{{ url_for('auth.register') }}" class="btn btn-primary">✨ Sign up</a>
+                    </div>
+                {% endif %}
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <div class="container">
+            <!-- Hero Section -->
+            <section class="hero">
+                <h1 style="font-weight: bold;">Welcome to Your Reading Adventure!</h1>
+                <p style="font-weight: bold;">🐝 Buzz into Knowledge - Discover, Borrow, and Enjoy Your Favorite Books! 🍯</p>
+            </section>
+
+            <!-- Search Section -->
+            <section class="search-section">
+                <form action="{{ url_for('main.index') }}" method="GET" class="search-container">
+                    <input
+                        type="text"
+                        name="search"
+                        placeholder="Search for books, authors, or genres..."
+                        class="search-input"
+                        value="{{ search_query }}"
+                    >
+                    <button type="submit" class="btn btn-primary">🔍 Search</button>
+                </form>
+
+                <div class="search-filters">
+                    <select name="genre" class="filter-select" onchange="this.form.submit()" form="filter-form">
+                        <option value="">📚 All Genres</option>
+                        <option value="Fiction" {% if category_filter == 'Fiction' %}selected{% endif %}>📖 Fiction</option>
+                        <option value="Fantasy" {% if category_filter == 'Fantasy' %}selected{% endif %}>✨ Fantasy</option>
+                        <option value="Science Fiction" {% if category_filter == 'Science Fiction' %}selected{% endif %}>🚀 Science Fiction</option>
+                        <option value="Adventure" {% if category_filter == 'Adventure' %}selected{% endif %}>🗺️ Adventure</option>
+                        <option value="Educational" {% if category_filter == 'Educational' %}selected{% endif %}>🎓 Educational</option>
+                        <option value="Mystery" {% if category_filter == 'Mystery' %}selected{% endif %}>🔍 Mystery</option>
+                        <option value="Romance" {% if category_filter == 'Romance' %}selected{% endif %}>💕 Romance</option>
+                        <option value="Biography" {% if category_filter == 'Biography' %}selected{% endif %}>👤 Biography</option>
+                        <option value="History" {% if category_filter == 'History' %}selected{% endif %}>📜 History</option>
+                        <option value="Children" {% if category_filter == 'Children' %}selected{% endif %}>🧸 Children</option>
+                    </select>
+
+                    <select name="rating" class="filter-select" onchange="this.form.submit()" form="filter-form">
+                        <option value="">🐝 Any Rating</option>
+                        <option value="1" {% if rating_filter == 1 %}selected{% endif %}>🐝 1+ Bees</option>
+                        <option value="2" {% if rating_filter == 2 %}selected{% endif %}>🐝🐝 2+ Bees</option>
+                        <option value="3" {% if rating_filter == 3 %}selected{% endif %}>🐝🐝🐝 3+ Bees</option>
+                        <option value="4" {% if rating_filter == 4 %}selected{% endif %}>🐝🐝🐝🐝 4+ Bees</option>
+                        <option value="5" {% if rating_filter == 5 %}selected{% endif %}>🐝🐝🐝🐝🐝 5 Bees</option>
+                    </select>
+                </div>
+
+                <form id="filter-form" action="{{ url_for('main.index') }}" method="GET" style="display: none;">
+                    <input type="hidden" name="search" value="{{ search_query }}">
+                </form>
+            </section>
+
+            <!-- Books Section -->
+            <section class="books-section">
+                <h2>🍯 Fresh Arrivals</h2>
+
+                {% if recent_books %}
+                    <div id="books-container" class="books-grid">
+                        {% for book in recent_books %}
+                            <div class="simple-book-card" data-book-id="{{ book.id }}" style="cursor: pointer;">
+                                <div class="simple-book-image">
+                                    {% if book.cover_image %}
+                                        <img src="{{ book.cover_image }}" alt="{{ book.title }}">
+                                    {% else %}
+                                        <div class="no-image">📚</div>
+                                    {% endif %}
+                                </div>
+                                <div class="simple-book-info">
+                                    <h3 class="book-title" style="line-height: 1.3; height: 2.6em; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; word-wrap: break-word;">
+                                        {% set title = book.title %}
+                                        {% if title|length > 50 %}{{ title[:50] }}...{% else %}{{ title }}{% endif %}
+                                    </h3>
+                                    <p class="book-author" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                        by {% set author = book.author %}
+                                        {% if author|length > 30 %}{{ author[:30] }}...{% else %}{{ author }}{% endif %}
+                                    </p>
+
+                                    {% if book.category %}
+                                        <span class="simple-genre">{{ book.category }}</span>
+                                    {% endif %}
+
+                                    <!-- Rating display and interaction -->
+                                    <div style="margin-top: 1rem;">
+                                        {% if session.user_id %}
+                                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                                <div class="user-rating" data-book-id="{{ book.id }}" style="display: flex; gap: 0.1rem;">
+                                                    {% for i in range(1, 6) %}
+                                                        <span class="rating-bee" data-rating="{{ i }}"
+                                                              style="font-size: 1.2rem; opacity: {% if i <= (book.user_rating or 0) %}1{% else %}0.3{% endif %}; cursor: pointer; transition: all 0.2s; padding: 2px;"
+                                                              onmouseover="highlightRating(this, {{ i }})"
+                                                              onmouseout="resetRating(this, {{ book.user_rating or 0 }})"
+                                                              onclick="submitRating({{ book.id }}, {{ i }})">🐝</span>
+                                                    {% endfor %}
+                                                </div>
+                                                <span style="font-size: 0.9rem; color: #666;">
+                                                    {% if book.average_rating > 0 %}{{ "%.1f"|format(book.average_rating) }} ({{ book.rating_count }}){% else %}No ratings{% endif %}
+                                                </span>
+                                            </div>
+                                        {% else %}
+                                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                                <div style="display: flex; gap: 0.1rem;">
+                                                    {% for i in range(1, 6) %}
+                                                        <span style="font-size: 1.2rem; opacity: {% if i <= (book.average_rating|int) %}1{% else %}0.3{% endif %};">🐝</span>
+                                                    {% endfor %}
+                                                </div>
+                                                <span style="font-size: 0.9rem; color: #666;">
+                                                    {% if book.average_rating > 0 %}{{ "%.1f"|format(book.average_rating) }} ({{ book.rating_count }}){% else %}No ratings{% endif %}
+                                                </span>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+
+                                    <!-- Details Button -->
+                                    <div style="margin-top: 1rem;">
+                                        <button
+                                            class="btn btn-primary"
+                                            style="width: 100%; padding: 0.75rem; font-size: 0.9rem; background: linear-gradient(45deg, #FFD700, #FF8C00); border: none; color: #333; font-weight: 600;"
+                                            onclick="event.stopPropagation(); window.location.href='{{ url_for('main.book_detail', book_id=book.id) }}';"
+                                        >
+                                            📖 View Details
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+
+                    <!-- Pagination -->
+                    {% if total_pages > 1 %}
+                        <div class="pagination-container">
+                            {% if page > 1 %}
+                                <a href="{{ url_for('main.index', page=page-1, search=search_query, genre=category_filter, rating=rating_filter) }}" class="pagination-btn">
+                                    ⬅️ Previous
+                                </a>
+                            {% else %}
+                                <button class="pagination-btn" disabled>⬅️ Previous</button>
+                            {% endif %}
+
+                            <div class="pagination-info">
+                                <span>Page {{ page }} of {{ total_pages }}</span>
+                                <div class="books-count">Showing {{ recent_books|length }} of {{ total_books }} books</div>
+                            </div>
+
+                            {% if page < total_pages %}
+                                <a href="{{ url_for('main.index', page=page+1, search=search_query, genre=category_filter, rating=rating_filter) }}" class="pagination-btn">
+                                    Next ➡️
+                                </a>
+                            {% else %}
+                                <button class="pagination-btn" disabled>Next ➡️</button>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                {% else %}
+                    <!-- No Books Found -->
+                    <div class="no-books">
+                        <div class="no-books-icon">📚</div>
+                        <h3>No books found</h3>
+                        {% if search_query or category_filter %}
+                            <p>Try adjusting your search criteria or browse all books.</p>
+                            <a href="{{ url_for('main.index') }}" class="btn btn-primary">Clear Filters</a>
+                        {% else %}
+                            <p>There are no books in the library yet.</p>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </section>
+        </div>
+    </main>
+
+
+
+    <!-- Borrow Request Modal -->
+    <div id="borrowModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeBorrowModal()">&times;</span>
+            <h2>🍯 Request to Borrow</h2>
+            <div id="borrowBookInfo"></div>
+            <div class="form-group">
+                <label for="borrowMessage">📝 Message (Required):</label>
+                <textarea id="borrowMessage" name="message" rows="3" placeholder="Why would you like to borrow this book?" required></textarea>
+            </div>
+            <button type="button" onclick="submitBorrowRequest()" class="btn btn-primary" style="width: 100%;">🚀 Send Request</button>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer style="background: #2c3e50 !important; color: white !important; text-align: center; padding: 1.5rem; margin-top: 3rem; border-top: 3px solid #FFD700;">
+        <p style="margin: 0; font-weight: 500; font-size: 0.9rem; color: white !important;">© 2025 Made by Daanish Ahmad Mufti</p>
+    </footer>
+
+    <!-- Bootstrap JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script src="{{ url_for('static', filename='js/original-main.js') }}"></script>
+</body>
+</html>

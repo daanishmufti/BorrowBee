@@ -1,0 +1,259 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard - BorrowBee{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-12 mb-4">
+            <h1>Admin Dashboard</h1>
+            <p class="text-muted">Manage your library system</p>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card bg-primary">
+                <div class="card-body text-center">
+                    <i data-feather="book" class="mb-2" style="width: 36px; height: 36px;"></i>
+                    <h3>{{ total_books }}</h3>
+                    <p class="mb-0">Total Books</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card bg-info">
+                <div class="card-body text-center">
+                    <i data-feather="users" class="mb-2" style="width: 36px; height: 36px;"></i>
+                    <h3>{{ total_users }}</h3>
+                    <p class="mb-0">Registered Users</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card bg-success">
+                <div class="card-body text-center">
+                    <i data-feather="bookmark" class="mb-2" style="width: 36px; height: 36px;"></i>
+                    <h3>{{ total_borrowed }}</h3>
+                    <p class="mb-0">Currently Borrowed</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card bg-warning">
+                <div class="card-body text-center">
+                    <i data-feather="alert-circle" class="mb-2" style="width: 36px; height: 36px;"></i>
+                    <h3>{{ overdue_count }}</h3>
+                    <p class="mb-0">Overdue Books</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i data-feather="zap"></i> Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 mb-2">
+                            <a href="{{ url_for('main.add_book') }}" class="btn btn-success w-100">
+                                <i data-feather="plus"></i> Add New Book
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <a href="{{ url_for('main.books') }}" class="btn btn-primary w-100">
+                                <i data-feather="book-open"></i> Manage Books
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <button class="btn btn-info w-100" disabled>
+                                <i data-feather="users"></i> Manage Users
+                            </button>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <button class="btn btn-secondary w-100" disabled>
+                                <i data-feather="download"></i> Export Data
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Recent Borrow Activities -->
+        <div class="col-lg-8 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i data-feather="activity"></i> Recent Borrow Activities</h5>
+                </div>
+                <div class="card-body">
+                    {% if recent_borrows %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>User</th>
+                                        <th>Book</th>
+                                        <th>Borrowed</th>
+                                        <th>Due Date</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for record in recent_borrows %}
+                                        <tr {% if record.is_overdue() %}class="table-warning"{% endif %}>
+                                            <td>{{ record.borrower.first_name }} {{ record.borrower.last_name }}</td>
+                                            <td>
+                                                <a href="{{ url_for('main.book_detail', book_id=record.book.id) }}">
+                                                    {{ record.book.title }}
+                                                </a>
+                                            </td>
+                                            <td>{{ record.borrow_date.strftime('%Y-%m-%d') }}</td>
+                                            <td>{{ record.due_date.strftime('%Y-%m-%d') }}</td>
+                                            <td>
+                                                {% if record.status == 'returned' %}
+                                                    <span class="badge bg-success">Returned</span>
+                                                {% elif record.is_overdue() %}
+                                                    <span class="badge bg-danger">Overdue</span>
+                                                {% else %}
+                                                    <span class="badge bg-primary">Borrowed</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i data-feather="activity" style="width: 48px; height: 48px;" class="text-muted mb-3"></i>
+                            <p class="text-muted">No recent borrow activities</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Books Added -->
+        <div class="col-lg-4 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i data-feather="book-open"></i> Recently Added Books</h5>
+                </div>
+                <div class="card-body">
+                    {% if recent_books %}
+                        {% for book in recent_books %}
+                            <div class="d-flex mb-3 {% if not loop.last %}border-bottom pb-3{% endif %}">
+                                <div class="flex-shrink-0">
+                                    {% if book.cover_image %}
+                                        <img src="{{ url_for('static', filename='uploads/' + book.cover_image) }}" 
+                                             alt="{{ book.title }}" class="rounded" 
+                                             style="width: 50px; height: 70px; object-fit: cover;">
+                                    {% else %}
+                                        <div class="bg-light rounded d-flex align-items-center justify-content-center" 
+                                             style="width: 50px; height: 70px;">
+                                            <i data-feather="book" style="width: 20px; height: 20px;" class="text-muted"></i>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <h6 class="mb-1">
+                                        <a href="{{ url_for('main.book_detail', book_id=book.id) }}" 
+                                           class="text-decoration-none">
+                                            {{ book.title[:30] }}{% if book.title|length > 30 %}...{% endif %}
+                                        </a>
+                                    </h6>
+                                    <p class="mb-1 text-muted small">{{ book.author }}</p>
+                                    <small class="text-muted">{{ book.created_at.strftime('%Y-%m-%d') }}</small>
+                                </div>
+                            </div>
+                        {% endfor %}
+                        <div class="text-center">
+                            <a href="{{ url_for('main.books') }}" class="btn btn-sm btn-outline-primary">
+                                View All Books
+                            </a>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i data-feather="book" style="width: 48px; height: 48px;" class="text-muted mb-3"></i>
+                            <p class="text-muted">No books added yet</p>
+                            <a href="{{ url_for('main.add_book') }}" class="btn btn-sm btn-primary">
+                                Add First Book
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- System Status -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5><i data-feather="monitor"></i> System Status</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span>Database</span>
+                        <span class="badge bg-success">Online</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span>File Uploads</span>
+                        <span class="badge bg-success">Available</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span>System Health</span>
+                        <span class="badge bg-success">Good</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Features Coming Soon -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i data-feather="star"></i> Coming Soon</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 text-center mb-3">
+                            <i data-feather="users" class="mb-2 text-muted" style="width: 32px; height: 32px;"></i>
+                            <h6>User Management</h6>
+                            <p class="text-muted small">Manage user accounts and permissions</p>
+                        </div>
+                        <div class="col-md-3 text-center mb-3">
+                            <i data-feather="bar-chart-2" class="mb-2 text-muted" style="width: 32px; height: 32px;"></i>
+                            <h6>Analytics</h6>
+                            <p class="text-muted small">Detailed reports and statistics</p>
+                        </div>
+                        <div class="col-md-3 text-center mb-3">
+                            <i data-feather="mail" class="mb-2 text-muted" style="width: 32px; height: 32px;"></i>
+                            <h6>Email Notifications</h6>
+                            <p class="text-muted small">Automated reminders and alerts</p>
+                        </div>
+                        <div class="col-md-3 text-center mb-3">
+                            <i data-feather="download" class="mb-2 text-muted" style="width: 32px; height: 32px;"></i>
+                            <h6>Data Export</h6>
+                            <p class="text-muted small">Export library data and reports</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        feather.replace();
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - BorrowBee</title>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/original-style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <header>
+        <nav class="container">
+<div class="logo">
+    <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSHWdM-EsGO8rjNbN41zb5yxP75X832SZfy_g&s" alt="BorrowBee Logo" class="logo-img">
+    <span>BorrowBee</span>
+</div>
+
+<style>
+    .logo {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .logo-img {
+        height: 30px; /* Slightly smaller to match text */
+    }
+</style>
+            <div class="nav-buttons-container">
+                <div class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" style="text-decoration: none; color: #D2691E; font-weight: 500;">
+                        👤 {{ session.username }}
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="{{ url_for('main.index') }}">🏠 Home</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('main.dashboard') }}">📋 Dashboard</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('main.about') }}">👤 About</a></li>
+                        {% if session.is_admin %}
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{{ url_for('main.admin') }}">⚙️ Admin Panel</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('main.add_book') }}">➕ Add New Book</a></li>
+                        {% endif %}
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}">🚪 Logout</a></li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main class="main-content">
+        <div class="container">
+            <!-- Hero Section -->
+            <section class="hero">
+                <h1>
+                    <strong>Welcome to Your Dashboard, {{ user.username }}!</strong>
+                </h1>
+                <p class="subtitle">
+                    🐝 Add Amazing Books to Our Hive - Share the Joy of Reading! 🍯
+                </p>
+            </section>
+
+            <!-- Flash Messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <!-- Profile Management Section -->
+            <section class="dashboard-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-user"></i> Your Profile & Delivery Details</h2>
+                    <button id="editProfileBtn" onclick="toggleProfileEdit()" class="btn btn-secondary">
+                        <i class="fas fa-edit"></i> Edit Profile
+                    </button>
+                </div>
+
+                <!-- Profile Form (Hidden by default) -->
+                <form id="profileForm" method="POST" class="profile-form" style="display: none;">
+                    <input type="hidden" name="action" value="update_profile">
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label><i class="fas fa-user"></i> Full Name *</label>
+                            <input type="text" name="name" value="{{ (user.first_name or '') + ' ' + (user.last_name or '') }}"
+                                   placeholder="Enter your full name" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label><i class="fas fa-phone"></i> Phone Number</label>
+                            <input type="tel" name="phone" value="{{ user.bio or '' }}"
+                                   placeholder="+1 (555) 123-4567">
+                        </div>
+
+                        <div class="form-group full-width">
+                            <label><i class="fas fa-map-marker-alt"></i> Delivery Address</label>
+                            <input type="text" name="address" value="{{ user.location or '' }}"
+                                   placeholder="Enter your delivery address">
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-save"></i> Save Profile
+                        </button>
+                        <button type="button" onclick="toggleProfileEdit()" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Cancel
+                        </button>
+                    </div>
+                </form>
+
+                <!-- Profile Display Cards -->
+                <div id="profileDisplay" class="profile-cards">
+                    <div class="profile-card">
+                        <div class="card-header">
+                            <i class="fas fa-user"></i>
+                            <span>Name</span>
+                        </div>
+                        <p>{{ (user.first_name or '') + ' ' + (user.last_name or '') or user.username }}</p>
+                    </div>
+
+                    <div class="profile-card">
+                        <div class="card-header">
+                            <i class="fas fa-phone"></i>
+                            <span>Phone</span>
+                        </div>
+                        <p>{{ user.bio or 'Not provided' }}</p>
+                    </div>
+
+                    <div class="profile-card">
+                        <div class="card-header">
+                            <i class="fas fa-map-marker-alt"></i>
+                            <span>Address</span>
+                        </div>
+                        <p>{{ user.location or 'Not provided' }}</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Book Management Section -->
+            <section class="dashboard-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-book"></i> Your Book Library</h2>
+                    <button onclick="openModal('addBookModal')" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Add New Book
+                    </button>
+                </div>
+
+                <!-- My Books Grid -->
+                <div class="books-grid">
+                    {% if user_books %}
+                        {% for book in user_books %}
+                            <div class="book-card">
+                                <div class="book-image">
+                                    {% if book.cover_image %}
+                                        <img src="{{ book.cover_image }}" alt="{{ book.title }}">
+                                    {% else %}
+                                        <div class="book-placeholder">📖</div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="book-info">
+                                    <h3>{{ book.title }}</h3>
+                                    <p class="book-author">by {{ book.author }}</p>
+                                    <p class="book-category">{{ book.category }}</p>
+
+                                    <div class="rating-display">
+                                        <div class="rating-bees">
+                                            {% for i in range(1, 6) %}
+                                                <span class="rating-bee {% if book.average_rating and i <= book.average_rating|round %}filled{% endif %}">🐝</span>
+                                            {% endfor %}
+                                        </div>
+                                        <span class="rating-text">({{ book.rating_count or 0 }} reviews)</span>
+                                    </div>
+
+                                    <div class="availability-status {% if book.availability_status.expired %}inactive{% else %}active{% endif %}">
+                                        {{ book.availability_status.message }}
+                                    </div>
+
+                                    <div class="book-actions">
+                                        <button onclick="editBook({{ book.id }})" class="btn btn-sm btn-secondary">
+                                            <i class="fas fa-edit"></i> Edit
+                                        </button>
+                                        <button onclick="toggleAvailability({{ book.id }}, {{ 1 if not book.available else 0 }})"
+                                                class="btn btn-sm {% if book.available %}btn-warning{% else %}btn-success{% endif %}">
+                                            <i class="fas fa-{{ 'eye-slash' if book.available else 'eye' }}"></i>
+                                            {{ 'Hide' if book.available else 'Show' }}
+                                        </button>
+                                        <button onclick="deleteBook({{ book.id }})" class="btn btn-sm btn-danger">
+                                            <i class="fas fa-trash"></i> Delete
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="no-books">
+                            <div class="no-books-icon">📚</div>
+                            <h3>No books yet!</h3>
+                            <p>Start building your library by adding your first book.</p>
+                            <button onclick="openModal('addBookModal')" class="btn btn-primary">
+                                <i class="fas fa-plus"></i> Add Your First Book
+                            </button>
+                        </div>
+                    {% endif %}
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Add Book Modal -->
+    <div id="addBookModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('addBookModal')">&times;</span>
+            <h2><i class="fas fa-plus"></i> Add New Book</h2>
+            <form method="POST">
+                <input type="hidden" name="action" value="add_book">
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Title *</label>
+                        <input type="text" name="title" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Author *</label>
+                        <input type="text" name="author" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Genre *</label>
+                        <select name="genre" required>
+                            <option value="">Select Genre</option>
+                            <option value="Fiction">Fiction</option>
+                            <option value="Non-Fiction">Non-Fiction</option>
+                            <option value="Mystery">Mystery</option>
+                            <option value="Romance">Romance</option>
+                            <option value="Science Fiction">Science Fiction</option>
+                            <option value="Fantasy">Fantasy</option>
+                            <option value="Biography">Biography</option>
+                            <option value="History">History</option>
+                            <option value="Self-Help">Self-Help</option>
+                            <option value="Children">Children</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Age Group</label>
+                        <select name="age_group">
+                            <option value="">Select Age Group</option>
+                            <option value="Children">Children</option>
+                            <option value="Teen">Teen</option>
+                            <option value="Adult">Adult</option>
+                            <option value="All Ages">All Ages</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Availability Period</label>
+                        <select name="availability_period">
+                            <option value="3days">3 Days</option>
+                            <option value="week" selected>1 Week</option>
+                            <option value="month">1 Month</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Cover Image URL</label>
+                        <input type="url" name="image_url" placeholder="https://example.com/image.jpg">
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label>Description</label>
+                        <textarea name="description" rows="3" placeholder="Brief description of the book..."></textarea>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Add Book
+                    </button>
+                    <button type="button" onclick="closeModal('addBookModal')" class="btn btn-secondary">
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Book Modal -->
+    <div id="editBookModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('editBookModal')">&times;</span>
+            <h2><i class="fas fa-edit"></i> Edit Book</h2>
+            <form method="POST" id="editBookForm">
+                <input type="hidden" name="action" value="update_book">
+                <input type="hidden" name="book_id" id="editBookId">
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Title *</label>
+                        <input type="text" name="title" id="editTitle" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Author *</label>
+                        <input type="text" name="author" id="editAuthor" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Genre *</label>
+                        <select name="genre" id="editGenre" required>
+                            <option value="">Select Genre</option>
+                            <option value="Fiction">Fiction</option>
+                            <option value="Non-Fiction">Non-Fiction</option>
+                            <option value="Mystery">Mystery</option>
+                            <option value="Romance">Romance</option>
+                            <option value="Science Fiction">Science Fiction</option>
+                            <option value="Fantasy">Fantasy</option>
+                            <option value="Biography">Biography</option>
+                            <option value="History">History</option>
+                            <option value="Self-Help">Self-Help</option>
+                            <option value="Children">Children</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Age Group</label>
+                        <select name="age_group" id="editAgeGroup">
+                            <option value="">Select Age Group</option>
+                            <option value="Children">Children</option>
+                            <option value="Teen">Teen</option>
+                            <option value="Adult">Adult</option>
+                            <option value="All Ages">All Ages</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Availability Period</label>
+                        <select name="availability_period" id="editAvailabilityPeriod">
+                            <option value="3days">3 Days</option>
+                            <option value="week">1 Week</option>
+                            <option value="month">1 Month</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Cover Image URL</label>
+                        <input type="url" name="image_url" id="editImageUrl" placeholder="https://example.com/image.jpg">
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label>Description</label>
+                        <textarea name="description" id="editDescription" rows="3" placeholder="Brief description of the book..."></textarea>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Update Book
+                    </button>
+                    <button type="button" onclick="closeModal('editBookModal')" class="btn btn-secondary">
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/original-main.js') }}"></script>
+    <script>
+        function toggleProfileEdit() {
+            const form = document.getElementById('profileForm');
+            const display = document.getElementById('profileDisplay');
+            const btn = document.getElementById('editProfileBtn');
+
+            if (form.style.display === 'none') {
+                form.style.display = 'block';
+                display.style.display = 'none';
+                btn.innerHTML = '<i class="fas fa-times"></i> Cancel';
+            } else {
+                form.style.display = 'none';
+                display.style.display = 'grid';
+                btn.innerHTML = '<i class="fas fa-edit"></i> Edit Profile';
+            }
+        }
+
+        function editBook(bookId) {
+            // Get book data and populate edit form
+            const bookCard = document.querySelector(`button[onclick="editBook(${bookId})"]`).closest('.book-card');
+            const title = bookCard.querySelector('h3').textContent;
+            const author = bookCard.querySelector('.book-author').textContent.replace('by ', '');
+            const category = bookCard.querySelector('.book-category').textContent;
+
+            document.getElementById('editBookId').value = bookId;
+            document.getElementById('editTitle').value = title;
+            document.getElementById('editAuthor').value = author;
+            document.getElementById('editGenre').value = category;
+
+            openModal('editBookModal');
+        }
+
+        function toggleAvailability(bookId, newStatus) {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.innerHTML = `
+                <input type="hidden" name="action" value="toggle_availability">
+                <input type="hidden" name="book_id" value="${bookId}">
+                <input type="hidden" name="new_status" value="${newStatus}">
+            `;
+            document.body.appendChild(form);
+            form.submit();
+        }
+
+        function deleteBook(bookId) {
+            if (confirm('Are you sure you want to delete this book? This action cannot be undone.')) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.innerHTML = `
+                    <input type="hidden" name="action" value="delete_book">
+                    <input type="hidden" name="book_id" value="${bookId}">
+                `;
+                document.body.appendChild(form);
+                form.submit();
+            }
+        }
+
+    </script>
+
+    <!-- Footer -->
+    <footer style="background: #2c3e50 !important; color: white !important; text-align: center; padding: 1.5rem; margin-top: 3rem; border-top: 3px solid #FFD700;">
+        <p style="margin: 0; font-weight: 500; font-size: 0.9rem; color: white !important;">© 2025 Made by Daanish Ahmad Mufti</p>
+    </footer>
+
+    <!-- Bootstrap JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
